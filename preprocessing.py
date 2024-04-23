@@ -24,4 +24,6 @@ def msc(input_data):
  
     return data_msc
 
-def savgol():
+def savgol(input_data, window_length=31, polyorder=2, deriv=2):
+    output = savgol_filter(input_data, window_length, polyorder, deriv)
+    return output
