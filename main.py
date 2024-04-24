@@ -10,6 +10,7 @@ from preprocessing import msc, snv, savgol
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.metrics import r2_score, root_mean_squared_error
+from sklearn.svm import SVR
 import matplotlib.pyplot as plt
 
 # Funtion for reading spectra from folder
@@ -237,6 +238,67 @@ class App(customtkinter.CTk):
 
         elif self.radio_var.get() == 1:
             print('Starting SVM Regression')
+            parametersSVM = {'C': [1, 100, 1000, 20000, 30000, 40000, 60000, 80000], \
+                             'gamma': [0.001, 0.005, 0.01, 0.05, 0.1, 1, 10, 20, 50]}
+            set_kernel = 'rbf'
+            svm = SVR(kernel=set_kernel)
+            cvSVM = 5
+            #num_fitsSVM = cvSVM * sum([len(v) for v in parametersSVM.values()], len(parametersSVM))
+            num_fitsSVM = 5 * 8 * 9
+            print(num_fitsSVM)
+            #progressbar = tqdm(total=num_fits, desc='Regression Progress')
+            self.progress_bar['maximum'] = num_fitsSVM
+
+            #update progress
+            def scoring(estimator, X, y):
+                score = estimator.score(X,y)
+                #progressbar.update()
+                self.progress_bar['value'] += 1
+                self.progress_bar.update()
+                return score
+
+            opt_svm = GridSearchCV(svm, parametersSVM, scoring=scoring, verbose=2, cv=cvSVM)
+            opt_svm.fit(self.X_train, self.y_train)
+
+            self.progress_window.destroy()
+
+            print('Optimized Parameters: ')
+            print(opt_svm.best_params_)
+
+            svm = SVR(kernel=set_kernel, C=opt_svm.best_params_['C'], gamma=opt_svm.best_params_['gamma'])
+            svm.fit(self.X_train_val, self.y_train_val)
+
+            y_c = svm.predict(self.X_train)
+            y_cv = svm.predict(self.X_test)
+            y_vv = svm.predict(self.X_val)
+
+            score_c = r2_score(self.y_train, y_c)
+            score_cv = r2_score(self.y_test, y_cv)
+            score_vv = r2_score(self.y_val, y_vv)
+            rmse_c = root_mean_squared_error(self.y_train, y_c)
+            rmse_cv = root_mean_squared_error(self.y_test, y_cv)
+            rmse_vv = root_mean_squared_error(self.y_val, y_vv)
+
+            print("R2 calib: {:5.3f}".format(score_c))
+            print("R2 val: {:5.3f}".format(score_vv))
+            print("R2 test: {:5.3f}".format(score_cv))
+
+            print("RMSE calib: {:5.3f}".format(rmse_c))
+            print("RMSE val: {:5.3f}".format(rmse_vv))
+            print("RMSE test: {:5.3f}".format(rmse_cv))
+
+            z = np.polyfit(self.y_test, y_cv, 1) # gibt die Koeffizienten für mx+t aus, die am besten in die Punkte zw. Vorhersagewerte und tatsächliche Werte passt 
+            with plt.style.context(("ggplot")):
+                fig, ax = plt.subplots(figsize=(9, 5))
+                ax.scatter(y_cv, self.y_test, color = "red", edgecolor = "k")
+                ax.plot(np.polyval(z,self.y_test), self.y_test, c = "blue", linewidth=1) # berechnete Koeffizienten z werden auf Daten in y_test angewendet und die entsprechenden y-Werte werden berechnet
+                ax.plot(self.y_test, self.y_test, color = "green", linewidth=1)
+                plt.title('SVM')
+                plt.xlabel('Vorhersage Wassergehalt [%]')
+                plt.ylabel('Tatsächlicher Wassergehalt [%]')
+                legend_text='R² calib: {:.3f}\nR² val: {:.3f}\nR² test: {:.3f}\nRMSE calib: {:.3f}\nRMSE val: {:.3f}\nRMSE test: {:.3f}'.format(score_c,score_vv,score_cv ,rmse_c ,rmse_vv ,rmse_cv)
+                ax.legend([legend_text] ,loc='lower right')
+                plt.show() 
 
         else:
             print('No valid Choice!')
