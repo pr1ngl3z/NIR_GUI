@@ -1,11 +1,16 @@
 import os
 import numpy as np
 import tkinter as tk
+from tkinter import ttk
 import customtkinter
 import sys
+from tqdm import tqdm
 
 from preprocessing import msc, snv, savgol
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.cross_decomposition import PLSRegression
+from sklearn.metrics import r2_score, root_mean_squared_error
+import matplotlib.pyplot as plt
 
 # Funtion for reading spectra from folder
 def readX_and_y(path):
@@ -95,6 +100,9 @@ class App(customtkinter.CTk):
         self.radio_button_2 = customtkinter.CTkRadioButton(master=self.regression_frame, text='SVM', variable=self.radio_var, value=1)
         self.radio_button_2.grid(row=3, column=0, pady=10, padx=20, sticky="n")
 
+        self.regression_button = customtkinter.CTkButton(master=self.regression_frame, text='Do Regression', command=self.do_regression)
+        self.regression_button.grid(row=4, column=0, padx=20, pady=(20, 10))
+
         # Create a text box
         self.text_frame = customtkinter.CTkFrame(self, width=280)
         self.text_frame.grid(row=1, column=3, sticky='nsew')
@@ -103,12 +111,17 @@ class App(customtkinter.CTk):
         self.text_box = customtkinter.CTkTextbox(self.text_frame)
         self.text_box.grid(row=1, column=0, padx=(20, 20), pady=(20, 20), sticky="nsew")
 
-        # Redirect stdout to the text box
+        self.progress_window = customtkinter.CTkToplevel(self)
+        self.progress_window.title('Regression Progress')
+        self.progress_bar = ttk.Progressbar(self.progress_window, length=500)
+        self.progress_bar.pack()
+
         sys.stdout = self
 
     def write(self, txt):
         # Append the text to the text box
         self.text_box.insert('end', txt)
+        self.text_box.update_idletasks
 
     def flush(self):
         # This could be used to ensure the text box is updated promptly, but in this case it does nothing
@@ -142,7 +155,6 @@ class App(customtkinter.CTk):
             print('No Preprocessing done')
         print('SUCCESS Preprocessing')
 
-
     # Funtion for splitting data
     def do_splitting(self):
         if len(self.entry_randstate.get()) > 0:
@@ -161,6 +173,75 @@ class App(customtkinter.CTk):
         self.X_train_val, self.X_test, self.y_train_val, self.y_test = train_test_split(self.X, self.y, test_size=self.test_size, random_state=self.random_state)
         self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(self.X_train_val, self.y_train_val, test_size=0.25, random_state=self.random_state)
         print('SUCCESS Data splitting')
+
+    def do_regression(self):
+        if self.radio_var.get() == 0:
+            print('Starting PLS Regression')
+            parametersPLS = {'n_components': np.arange(1,80,1)}
+            pls = PLSRegression()
+            cv = 10
+            num_fits = cv * sum([len(v) for v in parametersPLS.values()])
+            #progressbar = tqdm(total=num_fits, desc='Regression Progress')
+            self.progress_bar['maximum'] = num_fits
+
+            #update progress
+            def scoring(estimator, X, y):
+                score = estimator.score(X,y)
+                #progressbar.update()
+                self.progress_bar['value'] += 1
+                self.progress_bar.update()
+                return score
+
+            opt_pls = GridSearchCV(pls, parametersPLS, scoring=scoring, verbose=2, cv=cv)
+            opt_pls.fit(self.X_train, self.y_train)
+
+            self.progress_window.destroy()
+
+            print('Optimized Parameters: ')
+            print(opt_pls.best_params_)
+
+            pls = PLSRegression(n_components=opt_pls.best_params_['n_components'])
+            pls.fit(self.X_train_val, self.y_train_val)
+
+            y_c = pls.predict(self.X_train)
+            y_cv = pls.predict(self.X_test)
+            y_vv = pls.predict(self.X_val)
+
+            score_c = r2_score(self.y_train, y_c)
+            score_cv = r2_score(self.y_test, y_cv)
+            score_vv = r2_score(self.y_val, y_vv)
+            rmse_c = root_mean_squared_error(self.y_train, y_c)
+            rmse_cv = root_mean_squared_error(self.y_test, y_cv)
+            rmse_vv = root_mean_squared_error(self.y_val, y_vv)
+
+            print("R2 calib: {:5.3f}".format(score_c))
+            print("R2 val: {:5.3f}".format(score_vv))
+            print("R2 test: {:5.3f}".format(score_cv))
+
+            print("RMSE calib: {:5.3f}".format(rmse_c))
+            print("RMSE val: {:5.3f}".format(rmse_vv))
+            print("RMSE test: {:5.3f}".format(rmse_cv))
+
+            z = np.polyfit(self.y_test, y_cv, 1) # gibt die Koeffizienten für mx+t aus, die am besten in die Punkte zw. Vorhersagewerte und tatsächliche Werte passt 
+            with plt.style.context(("ggplot")):
+                fig, ax = plt.subplots(figsize=(9, 5))
+                ax.scatter(y_cv, self.y_test, color = "red", edgecolor = "k")
+                ax.plot(np.polyval(z,self.y_test), self.y_test, c = "blue", linewidth=1) # berechnete Koeffizienten z werden auf Daten in y_test angewendet und die entsprechenden y-Werte werden berechnet
+                ax.plot(self.y_test, self.y_test, color = "green", linewidth=1)
+                plt.title('PLS')
+                plt.xlabel('Vorhersage Wassergehalt [%]')
+                plt.ylabel('Tatsächlicher Wassergehalt [%]')
+                legend_text='R² calib: {:.3f}\nR² val: {:.3f}\nR² test: {:.3f}\nRMSE calib: {:.3f}\nRMSE val: {:.3f}\nRMSE test: {:.3f}'.format(score_c,score_vv,score_cv ,rmse_c ,rmse_vv ,rmse_cv)
+                ax.legend([legend_text] ,loc='lower right')
+                plt.show() 
+
+        elif self.radio_var.get() == 1:
+            print('Starting SVM Regression')
+
+        else:
+            print('No valid Choice!')
+
+        
 
 
 if __name__ == "__main__":
