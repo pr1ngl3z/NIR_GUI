@@ -4,7 +4,6 @@ import tkinter as tk
 from tkinter import ttk
 import customtkinter
 import sys
-from tqdm import tqdm
 
 from preprocessing import msc, snv, savgol
 from sklearn.model_selection import train_test_split, GridSearchCV
@@ -112,11 +111,6 @@ class App(customtkinter.CTk):
         self.text_box = customtkinter.CTkTextbox(self.text_frame)
         self.text_box.grid(row=1, column=0, padx=(20, 20), pady=(20, 20), sticky="nsew")
 
-        self.progress_window = customtkinter.CTkToplevel(self)
-        self.progress_window.title('Regression Progress')
-        self.progress_bar = ttk.Progressbar(self.progress_window, length=500)
-        self.progress_bar.pack()
-
         sys.stdout = self
 
     def write(self, txt):
@@ -175,7 +169,15 @@ class App(customtkinter.CTk):
         self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(self.X_train_val, self.y_train_val, test_size=0.25, random_state=self.random_state)
         print('SUCCESS Data splitting')
 
+    # Function for regressions
     def do_regression(self):
+
+        # Window for Progress bar
+        self.progress_window = customtkinter.CTkToplevel(self)
+        self.progress_window.title('Regression Progress')
+        self.progress_bar = ttk.Progressbar(self.progress_window, length=500)
+        self.progress_bar.pack()
+
         if self.radio_var.get() == 0:
             print('Starting PLS Regression')
             parametersPLS = {'n_components': np.arange(1,80,1)}
@@ -186,14 +188,14 @@ class App(customtkinter.CTk):
             self.progress_bar['maximum'] = num_fits
 
             #update progress
-            def scoring(estimator, X, y):
+            def scoringPLS(estimator, X, y):
                 score = estimator.score(X,y)
                 #progressbar.update()
                 self.progress_bar['value'] += 1
                 self.progress_bar.update()
                 return score
 
-            opt_pls = GridSearchCV(pls, parametersPLS, scoring=scoring, verbose=2, cv=cv)
+            opt_pls = GridSearchCV(pls, parametersPLS, scoring=scoringPLS, verbose=0, cv=cv)
             opt_pls.fit(self.X_train, self.y_train)
 
             self.progress_window.destroy()
@@ -243,21 +245,19 @@ class App(customtkinter.CTk):
             set_kernel = 'rbf'
             svm = SVR(kernel=set_kernel)
             cvSVM = 5
-            #num_fitsSVM = cvSVM * sum([len(v) for v in parametersSVM.values()], len(parametersSVM))
-            num_fitsSVM = 5 * 8 * 9
+            num_fitsSVM = cvSVM * len(parametersSVM['C']) * len(parametersSVM['gamma'])
             print(num_fitsSVM)
-            #progressbar = tqdm(total=num_fits, desc='Regression Progress')
             self.progress_bar['maximum'] = num_fitsSVM
 
             #update progress
-            def scoring(estimator, X, y):
+            def scoringSVM(estimator, X, y):
                 score = estimator.score(X,y)
                 #progressbar.update()
                 self.progress_bar['value'] += 1
                 self.progress_bar.update()
                 return score
 
-            opt_svm = GridSearchCV(svm, parametersSVM, scoring=scoring, verbose=2, cv=cvSVM)
+            opt_svm = GridSearchCV(svm, parametersSVM, scoring=scoringSVM, verbose=0, cv=cvSVM)
             opt_svm.fit(self.X_train, self.y_train)
 
             self.progress_window.destroy()
