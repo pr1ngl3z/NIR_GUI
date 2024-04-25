@@ -7,6 +7,7 @@ import sys
 import random
 
 from preprocessing import msc, snv, savgol
+from utils import readX_and_y, plot_metrics, print_metrics
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.metrics import r2_score, root_mean_squared_error
@@ -19,26 +20,6 @@ from tensorflow.keras.initializers import HeNormal # type: ignore
 from tensorflow.keras import layers # type: ignore
 from keras.callbacks import EarlyStopping # type: ignore
 
-
-# Funtion for reading spectra from folder
-def readX_and_y(path):
-    csvList = []
-    for i in os.listdir(path):
-        if i.endswith('.npy'):
-            csvList.append(i)
-
-    X = np.zeros((len(csvList), 256))
-    y = np.zeros((len(csvList)))
-    wl = np.linspace(930.033, 1852.05, 256)
-
-    i = 0
-    for messung in csvList:
-        y[i] = float(messung.split(sep='_')[1])/10.0
-        data = np.load('{}/{}'.format(path, messung))
-        X[i,:] = data[:]
-        i = i + 1
-
-    return X, y
 
 customtkinter.set_appearance_mode('dark')
 customtkinter.set_default_color_theme('dark-blue')
@@ -54,7 +35,6 @@ class App(customtkinter.CTk):
         # Load Spectra via Button
         self.X = None
         self.y = None
-
         self.main_button_1 = customtkinter.CTkButton(master=self, text= 'LOAD Spectra', fg_color="transparent", border_width=2, text_color=("gray10", "#DCE4EE"), command=self.open_file_dialog)
         self.main_button_1.grid(row=0, column=0, padx=(20, 20), pady=(20, 20), sticky="nsew")
 
@@ -188,6 +168,7 @@ class App(customtkinter.CTk):
         self.progress_bar = ttk.Progressbar(self.progress_window, length=500)
         self.progress_bar.pack()
 
+        # PLS
         if self.radio_var.get() == 0:
             print('Starting PLS Regression')
             parametersPLS = {'n_components': np.arange(1,80,1)}
@@ -227,27 +208,10 @@ class App(customtkinter.CTk):
             rmse_cv = root_mean_squared_error(self.y_test, y_cv)
             rmse_vv = root_mean_squared_error(self.y_val, y_vv)
 
-            print("R2 calib: {:5.3f}".format(score_c))
-            print("R2 val: {:5.3f}".format(score_vv))
-            print("R2 test: {:5.3f}".format(score_cv))
+            print_metrics(score_c, score_vv, score_cv, rmse_c, rmse_vv, rmse_cv)
+            plot_metrics(self.radio_var.get(), self.y_test, y_cv, score_c, score_vv, score_cv, rmse_c, rmse_vv, rmse_cv)
 
-            print("RMSE calib: {:5.3f}".format(rmse_c))
-            print("RMSE val: {:5.3f}".format(rmse_vv))
-            print("RMSE test: {:5.3f}".format(rmse_cv))
-
-            z = np.polyfit(self.y_test, y_cv, 1) # gibt die Koeffizienten für mx+t aus, die am besten in die Punkte zw. Vorhersagewerte und tatsächliche Werte passt 
-            with plt.style.context(("ggplot")):
-                fig, ax = plt.subplots(figsize=(9, 5))
-                ax.scatter(y_cv, self.y_test, color = "red", edgecolor = "k")
-                ax.plot(np.polyval(z,self.y_test), self.y_test, c = "blue", linewidth=1) # berechnete Koeffizienten z werden auf Daten in y_test angewendet und die entsprechenden y-Werte werden berechnet
-                ax.plot(self.y_test, self.y_test, color = "green", linewidth=1)
-                plt.title('PLS')
-                plt.xlabel('Vorhersage Wassergehalt [%]')
-                plt.ylabel('Tatsächlicher Wassergehalt [%]')
-                legend_text='R² calib: {:.3f}\nR² val: {:.3f}\nR² test: {:.3f}\nRMSE calib: {:.3f}\nRMSE val: {:.3f}\nRMSE test: {:.3f}'.format(score_c,score_vv,score_cv ,rmse_c ,rmse_vv ,rmse_cv)
-                ax.legend([legend_text] ,loc='lower right')
-                plt.show() 
-
+        # SVM
         elif self.radio_var.get() == 1:
             print('Starting SVM Regression')
             parametersSVM = {'C': [1, 100, 1000, 20000, 30000, 40000, 60000, 80000], \
@@ -289,27 +253,10 @@ class App(customtkinter.CTk):
             rmse_cv = root_mean_squared_error(self.y_test, y_cv)
             rmse_vv = root_mean_squared_error(self.y_val, y_vv)
 
-            print("R2 calib: {:5.3f}".format(score_c))
-            print("R2 val: {:5.3f}".format(score_vv))
-            print("R2 test: {:5.3f}".format(score_cv))
+            print_metrics(score_c, score_vv, score_cv, rmse_c, rmse_vv, rmse_cv)
+            plot_metrics(self.radio_var.get(), self.y_test, y_cv, score_c, score_vv, score_cv, rmse_c, rmse_vv, rmse_cv)
 
-            print("RMSE calib: {:5.3f}".format(rmse_c))
-            print("RMSE val: {:5.3f}".format(rmse_vv))
-            print("RMSE test: {:5.3f}".format(rmse_cv))
-
-            z = np.polyfit(self.y_test, y_cv, 1) # gibt die Koeffizienten für mx+t aus, die am besten in die Punkte zw. Vorhersagewerte und tatsächliche Werte passt 
-            with plt.style.context(("ggplot")):
-                fig, ax = plt.subplots(figsize=(9, 5))
-                ax.scatter(y_cv, self.y_test, color = "red", edgecolor = "k")
-                ax.plot(np.polyval(z,self.y_test), self.y_test, c = "blue", linewidth=1) # berechnete Koeffizienten z werden auf Daten in y_test angewendet und die entsprechenden y-Werte werden berechnet
-                ax.plot(self.y_test, self.y_test, color = "green", linewidth=1)
-                plt.title('SVM')
-                plt.xlabel('Vorhersage Wassergehalt [%]')
-                plt.ylabel('Tatsächlicher Wassergehalt [%]')
-                legend_text='R² calib: {:.3f}\nR² val: {:.3f}\nR² test: {:.3f}\nRMSE calib: {:.3f}\nRMSE val: {:.3f}\nRMSE test: {:.3f}'.format(score_c,score_vv,score_cv ,rmse_c ,rmse_vv ,rmse_cv)
-                ax.legend([legend_text] ,loc='lower right')
-                plt.show() 
-
+        # CNN
         elif self.radio_var.get() == 2:
             print('Starting CNN Regression')
 
@@ -436,26 +383,8 @@ class App(customtkinter.CTk):
             rmse_cv = root_mean_squared_error(self.y_test, y_cv)
             rmse_vv = root_mean_squared_error(self.y_val, y_vv)
 
-            print("R2 calib: {:5.3f}".format(score_c))
-            print("R2 val: {:5.3f}".format(score_vv))
-            print("R2 test: {:5.3f}".format(score_cv))
-
-            print("RMSE calib: {:5.3f}".format(rmse_c))
-            print("RMSE val: {:5.3f}".format(rmse_vv))
-            print("RMSE test: {:5.3f}".format(rmse_cv))
-
-            z = np.polyfit(self.y_test, y_cv, 1) # gibt die Koeffizienten für mx+t aus, die am besten in die Punkte zw. Vorhersagewerte und tatsächliche Werte passt 
-            with plt.style.context(("ggplot")):
-                fig, ax = plt.subplots(figsize=(9, 5))
-                ax.scatter(y_cv, self.y_test, color = "red", edgecolor = "k")
-                ax.plot(np.polyval(z,self.y_test), self.y_test, c = "blue", linewidth=1) # berechnete Koeffizienten z werden auf Daten in y_test angewendet und die entsprechenden y-Werte werden berechnet
-                ax.plot(self.y_test, self.y_test, color = "green", linewidth=1)
-                plt.title(f'CNN (Dropout {DROPOUT})')
-                plt.xlabel('Vorhersage Wassergehalt [%]')
-                plt.ylabel('Tatsächlicher Wassergehalt [%]')
-                legend_text='R² calib: {:.3f}\nR² val: {:.3f}\nR² test: {:.3f}\nRMSE calib: {:.3f}\nRMSE val: {:.3f}\nRMSE test: {:.3f}'.format(score_c,score_vv,score_cv ,rmse_c ,rmse_vv ,rmse_cv)
-                ax.legend([legend_text] ,loc='lower right')
-                plt.show()
+            print_metrics(score_c, score_vv, score_cv, rmse_c, rmse_vv, rmse_cv)
+            plot_metrics(self.radio_var.get(), self.y_test, y_cv, score_c, score_vv, score_cv, rmse_c, rmse_vv, rmse_cv)
             
         else:
             print('No valid Choice!')
