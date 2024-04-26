@@ -4,20 +4,16 @@ import tkinter as tk
 from tkinter import ttk
 import customtkinter
 import sys
-import random
 
 from preprocessing import msc, snv, savgol
 from utils import readX_and_y, plot_metrics, print_metrics
+from CNNclass import CNN
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.metrics import r2_score, root_mean_squared_error
 from sklearn.svm import SVR
-from sklearn.preprocessing import StandardScaler
-import matplotlib.pyplot as plt
 
 import tensorflow as tf
-from tensorflow.keras.initializers import HeNormal # type: ignore
-from tensorflow.keras import layers # type: ignore
 from keras.callbacks import EarlyStopping # type: ignore
 
 
@@ -260,90 +256,14 @@ class App(customtkinter.CTk):
         elif self.radio_var.get() == 2:
             print('Starting CNN Regression')
 
-            def standardize_row(X_train, X_val, X_test):
-                scaler = StandardScaler()
-                X_train_scaled = scaler.fit_transform(X_train.T)
-                X_val_scaled = scaler.fit_transform(X_val.T)
-                X_test_scaled = scaler.fit_transform(X_test.T)
-                return [X_train_scaled.T, X_val_scaled.T, X_test_scaled.T]
+            cnn_model = CNN(self.X_train, self.X_val, self.X_test, self.y_train, self.y_val, self.y_test)
 
-            def standardize_column(X_train, X_val, X_test):
-                scaler = StandardScaler().fit(X_train)
-                X_train_scaled = scaler.transform(X_train)
-                X_val_scaled = scaler.transform(X_val)
-                X_test_scaled = scaler.transform(X_test)
-                return [X_train_scaled, X_val_scaled, X_test_scaled]
-            
-            def reproducible_comp():
-                os.environ['PYTHONHASHSEED'] = '0'
-                np.random.seed(42)
-                random.seed(42)
-                tf.random.set_seed(42)
-                
-            reproducible_comp() 
-            
-            X_train_scaled_col, X_val_scaled_col, X_test_scaled_col = standardize_column(self.X_train, self.X_val, self.X_test)
-            X_train_scaled_row, X_val_scaled_row, X_test_scaled_row = standardize_row(self.X_train, self.X_val, self.X_test)
-            X_train_scaled_rowcol, X_val_scaled_rowcol, X_test_scaled_rowcol = standardize_column(X_train_scaled_row, X_val_scaled_row, X_test_scaled_row)
-            
-            # Hypervariablen 
-            INPUT_DIMS = np.shape(self.X_train)[1]
-            CONV1D_DIMS = INPUT_DIMS
-            K_NUMBER = 2 #1
-            K_WIDTH = 5
-            K_STRIDE = 1
-            FC1_DIMS = 36
-            FC2_DIMS = 18
-            FC3_DIMS = 12
-            OUT_DIMS = 1
-            DROPOUT = 0.05
-            EPOCHS = 10000
-            BATCH = 1024
-            LR_Adam = 0.005*BATCH/256. #0.01
-            LR_RMS = 0.0005*BATCH/256. 
+            X_train_scaled_row, X_val_scaled_row, X_test_scaled_row = CNN.standardize_row(self.X_train, self.X_val, self.X_test)
+            X_train_scaled_rowcol, X_val_scaled_rowcol, X_test_scaled_rowcol = CNN.standardize_column(X_train_scaled_row, X_val_scaled_row, X_test_scaled_row)
 
-            self.progress_bar['maximum'] = EPOCHS
+            cnn_model.compile_model()
 
-            # Variablen L2 Regularisierung
-            beta = 0.003/2.
-            K_REG = tf.keras.regularizers.l2(beta)
-
-            # Initialisierung
-            K_INIT = HeNormal(seed=42)
-            model = tf.keras.Sequential([
-                layers.Reshape((INPUT_DIMS, 1), input_shape=(INPUT_DIMS,)),
-                layers.Conv1D(filters=K_NUMBER,
-                            kernel_size=K_WIDTH,
-                            strides=K_STRIDE,
-                            padding='same', 
-                            kernel_initializer=K_INIT,
-                            kernel_regularizer=K_REG,
-                            activation='elu',
-                            input_shape=(CONV1D_DIMS,1)),
-                layers.Dropout(DROPOUT),
-                layers.Flatten(),
-                layers.Dense(FC1_DIMS,
-                            kernel_initializer=K_INIT,
-                            kernel_regularizer=K_REG,
-                            activation='elu'),
-                layers.Dropout(DROPOUT),
-                layers.Dense(FC2_DIMS,
-                            kernel_initializer=K_INIT,
-                            kernel_regularizer=K_REG,
-                            activation='elu'),
-                layers.Dropout(DROPOUT),
-                layers.Dense(FC3_DIMS,
-                            kernel_initializer=K_INIT,
-                            kernel_regularizer=K_REG,
-                            activation='elu'),
-                layers.Dropout(DROPOUT),
-                layers.Dense(1,
-                            kernel_initializer=K_INIT,
-                            kernel_regularizer=K_REG,
-                            activation='linear')
-                ])
-
-            model.compile(optimizer=tf.keras.optimizers.RMSprop(learning_rate=LR_RMS), loss='mse', metrics=['mse'])
+            self.progress_bar['maximum'] = CNN.EPOCHS
 
             class ProgressBarCallback(tf.keras.callbacks.Callback):
                 def __init__(self, progress_bar):
@@ -355,26 +275,16 @@ class App(customtkinter.CTk):
 
             callback = [EarlyStopping(monitor='val_loss', patience=500, verbose=1), ProgressBarCallback(self.progress_bar)]
 
-            h1=model.fit(X_train_scaled_rowcol, self.y_train, batch_size=BATCH, epochs=EPOCHS, 
-             validation_data=(X_val_scaled_rowcol, self.y_val),
-             verbose=2,
-             callbacks=callback)
+            fitted_model = cnn_model.fit_model(X_train_scaled_rowcol, self.y_train, X_val_scaled_rowcol, self.y_val, callback)
 
             self.progress_window.destroy()
             tf.keras.backend.clear_session()
             
-            with plt.style.context('ggplot'):
-                plt.plot(h1.history['loss'], label='Training loss')
-                plt.plot(h1.history['val_loss'], label='Validation loss')
-                plt.yscale('log')
-                plt.ylabel('Loss')
-                plt.xlabel('Epochs')
-                plt.legend()
-                plt.show()
+            CNN.plot_loss(fitted_model)
 
-            y_c = model.predict(X_train_scaled_rowcol)
-            y_cv = model.predict(X_test_scaled_rowcol)
-            y_vv = model.predict(X_val_scaled_rowcol)
+            y_c = fitted_model.predict(X_train_scaled_rowcol)
+            y_cv = fitted_model.predict(X_test_scaled_rowcol)
+            y_vv = fitted_model.predict(X_val_scaled_rowcol)
 
             score_c = r2_score(self.y_train, y_c)
             score_cv = r2_score(self.y_test, y_cv)
