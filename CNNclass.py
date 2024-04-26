@@ -78,7 +78,7 @@ class CNN:
         return model
 
     def compile_model(self):
-        self.model.compile(optimizer=tf.keras.optimizers.RMSprop(learning_rate=CNN.LR_RMS), loss='mse', metrics=['mse'])
+        self.model.compile(optimizer=tf.keras.optimizers.RMSprop(learning_rate=self.LR_RMS), loss='mse', metrics=['mse'])
 
     def fit_model(self, X_train_scaled_rowcol, y_train, X_val_scaled_rowcol, y_val, callback):
         fitted_model=self.model.fit(X_train_scaled_rowcol, y_train, batch_size=self.BATCH, epochs=self.EPOCHS, 
@@ -105,21 +105,23 @@ class CNN:
     #     X_test_scaled = scaler.fit_transform(X_test.T)
     #     return [X_train_scaled.T, X_val_scaled.T, X_test_scaled.T]
 
-    def standardize_row(self, X_train, X_val, X_test):
+
+    @staticmethod
+    def standardize_row(X_train, X_val, X_test):
         scaler = StandardScaler()
         X_train_scaled = scaler.fit_transform(X_train)
-        X_val_scaled = scaler.transform(X_val)  # Verwende transform statt fit_transform
-        X_test_scaled = scaler.transform(X_test)  # Verwende transform statt fit_transform
+        X_val_scaled = scaler.transform(X_val)
+        X_test_scaled = scaler.transform(X_test)
         return X_train_scaled, X_val_scaled, X_test_scaled
 
-
-    
-    def standardize_column(self, X_train, X_val, X_test):
+    @staticmethod
+    def standardize_column(X_train, X_val, X_test):
         scaler = StandardScaler().fit(X_train)
         X_train_scaled = scaler.transform(X_train)
         X_val_scaled = scaler.transform(X_val)
         X_test_scaled = scaler.transform(X_test)
-        return [X_train_scaled, X_val_scaled, X_test_scaled]
+        return X_train_scaled, X_val_scaled, X_test_scaled
+
     
     def reproducible_comp(self):
         os.environ['PYTHONHASHSEED'] = '0'

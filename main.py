@@ -263,7 +263,7 @@ class App(customtkinter.CTk):
 
             cnn_model.compile_model()
 
-            self.progress_bar['maximum'] = CNN.EPOCHS
+            self.progress_bar['maximum'] = cnn_model.EPOCHS
 
             class ProgressBarCallback(tf.keras.callbacks.Callback):
                 def __init__(self, progress_bar):
@@ -280,11 +280,11 @@ class App(customtkinter.CTk):
             self.progress_window.destroy()
             tf.keras.backend.clear_session()
             
-            CNN.plot_loss(fitted_model)
+            cnn_model.plot_loss(fitted_model)
 
-            y_c = fitted_model.predict(X_train_scaled_rowcol)
-            y_cv = fitted_model.predict(X_test_scaled_rowcol)
-            y_vv = fitted_model.predict(X_val_scaled_rowcol)
+            y_c = cnn_model.model.predict(X_train_scaled_rowcol)
+            y_cv = cnn_model.model.predict(X_test_scaled_rowcol)
+            y_vv = cnn_model.model.predict(X_val_scaled_rowcol)
 
             score_c = r2_score(self.y_train, y_c)
             score_cv = r2_score(self.y_test, y_cv)
