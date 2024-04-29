@@ -106,16 +106,16 @@ class CNN:
     #     return [X_train_scaled.T, X_val_scaled.T, X_test_scaled.T]
 
 
-    @staticmethod
-    def standardize_row(X_train, X_val, X_test):
+    #staticmethod
+    def standardize_row(self, X_train, X_val, X_test):
         scaler = StandardScaler()
         X_train_scaled = scaler.fit_transform(X_train)
         X_val_scaled = scaler.transform(X_val)
         X_test_scaled = scaler.transform(X_test)
         return X_train_scaled, X_val_scaled, X_test_scaled
 
-    @staticmethod
-    def standardize_column(X_train, X_val, X_test):
+    #staticmethod
+    def standardize_column(self, X_train, X_val, X_test):
         scaler = StandardScaler().fit(X_train)
         X_train_scaled = scaler.transform(X_train)
         X_val_scaled = scaler.transform(X_val)
