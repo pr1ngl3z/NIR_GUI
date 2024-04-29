@@ -256,14 +256,14 @@ class App(customtkinter.CTk):
         elif self.radio_var.get() == 2:
             print('Starting CNN Regression')
 
-            cnn_model = CNN(self.X_train, self.X_val, self.X_test, self.y_train, self.y_val, self.y_test)
+            self.cnn_model = CNN(self.X_train, self.X_val, self.X_test, self.y_train, self.y_val, self.y_test)
 
-            X_train_scaled_row, X_val_scaled_row, X_test_scaled_row = CNN.standardize_row(self.X_train, self.X_val, self.X_test)
-            X_train_scaled_rowcol, X_val_scaled_rowcol, X_test_scaled_rowcol = CNN.standardize_column(X_train_scaled_row, X_val_scaled_row, X_test_scaled_row)
+            self.X_train_scaled_row, self.X_val_scaled_row, self.X_test_scaled_row = self.cnn_model.standardize_row(self.X_train, self.X_val, self.X_test)
+            self.X_train_scaled_rowcol, self.X_val_scaled_rowcol, self.X_test_scaled_rowcol = self.cnn_model.standardize_column(self.X_train_scaled_row, self.X_val_scaled_row, self.X_test_scaled_row)
+            model = self.cnn_model.build_model()
+            self.cnn_model.compile_model(model)
 
-            cnn_model.compile_model()
-
-            self.progress_bar['maximum'] = cnn_model.EPOCHS
+            self.progress_bar['maximum'] = self.cnn_model.EPOCHS
 
             class ProgressBarCallback(tf.keras.callbacks.Callback):
                 def __init__(self, progress_bar):
@@ -275,16 +275,16 @@ class App(customtkinter.CTk):
 
             callback = [EarlyStopping(monitor='val_loss', patience=500, verbose=1), ProgressBarCallback(self.progress_bar)]
 
-            fitted_model = cnn_model.fit_model(X_train_scaled_rowcol, self.y_train, X_val_scaled_rowcol, self.y_val, callback)
+            fitted_model = self.cnn_model.fit_model(self.X_train_scaled_rowcol, self.y_train, self.X_val_scaled_rowcol, self.y_val, callback)
 
             self.progress_window.destroy()
             tf.keras.backend.clear_session()
             
-            cnn_model.plot_loss(fitted_model)
+            self.cnn_model.plot_loss(fitted_model)
 
-            y_c = cnn_model.model.predict(X_train_scaled_rowcol)
-            y_cv = cnn_model.model.predict(X_test_scaled_rowcol)
-            y_vv = cnn_model.model.predict(X_val_scaled_rowcol)
+            y_c = self.cnn_model.model.predict(self.X_train_scaled_rowcol)
+            y_cv = self.cnn_model.model.predict(self.X_test_scaled_rowcol)
+            y_vv = self.cnn_model.model.predict(self.X_val_scaled_rowcol)
 
             score_c = r2_score(self.y_train, y_c)
             score_cv = r2_score(self.y_test, y_cv)

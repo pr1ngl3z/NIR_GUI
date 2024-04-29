@@ -17,7 +17,7 @@ class CNN:
         self.y_test = y_test
 
         # Hypervariablen 
-        self.INPUT_DIMS = np.shape(X_train)[1]
+        self.INPUT_DIMS = np.shape(self.X_train)[1]
         self.CONV1D_DIMS = self.INPUT_DIMS
         self.K_NUMBER = 2 #1
         self.K_WIDTH = 5
@@ -39,11 +39,11 @@ class CNN:
         # Initialisierung
         self.K_INIT = HeNormal(seed=42)
 
-        self.model = self.build_model()
         self.reproducible_comp()
+        self.model = self.build_model()
 
     def build_model(self):
-        model = tf.keras.Sequential([
+        self.model = tf.keras.Sequential([
             layers.Reshape((self.INPUT_DIMS, 1), input_shape=(self.INPUT_DIMS,)),
             layers.Conv1D(filters=self.K_NUMBER,
                         kernel_size=self.K_WIDTH,
@@ -75,9 +75,9 @@ class CNN:
                         kernel_regularizer=self.K_REG,
                         activation='linear')
             ])
-        return model
+        return self.model
 
-    def compile_model(self):
+    def compile_model(self, model):
         self.model.compile(optimizer=tf.keras.optimizers.RMSprop(learning_rate=self.LR_RMS), loss='mse', metrics=['mse'])
 
     def fit_model(self, X_train_scaled_rowcol, y_train, X_val_scaled_rowcol, y_val, callback):
