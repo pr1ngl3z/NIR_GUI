@@ -30,8 +30,7 @@ class App(customtkinter.CTk):
         # configure window
         self.title("NIR Analyser")
         self.geometry(f"{860}x{720}")
-        self.grid_columnconfigure(1, weight=0)
-        self.grid_columnconfigure((2, 3), weight=0)
+        self.grid_rowconfigure(2, weight=1)
         self.grid_rowconfigure((0, 1), weight=0)
 
         # Load Spectra via Button
@@ -51,14 +50,14 @@ class App(customtkinter.CTk):
         self.scale_label.grid(row=0, column=0, padx=20, pady=(20,10))
         
         self.scale_label1 = customtkinter.CTkLabel(self.scale_frame, text=f'Start WL (min {self.preset_startWL}):', font=customtkinter.CTkFont(size=14))
-        self.scale_label1.grid(row=1, column=0, padx=20, pady=(20, 10))
+        self.scale_label1.grid(row=1, column=0, padx=(20,20), pady=(20, 0))
         self.entry_startWL = customtkinter.CTkEntry(master=self.scale_frame, placeholder_text=f'{self.preset_startWL}')
-        self.entry_startWL.grid(row=2, column=0, padx=(20, 0), pady=(20, 10), sticky="nsew")
+        self.entry_startWL.grid(row=2, column=0, padx=(20,20), pady=(10, 0), sticky="nsew")
 
         self.scale_label2 = customtkinter.CTkLabel(self.scale_frame, text=f'Stop WL (max {self.preset_stopWL}):', font=customtkinter.CTkFont(size=14))
-        self.scale_label2.grid(row=3, column=0, padx=20, pady=(20, 10))
+        self.scale_label2.grid(row=3, column=0, padx=(20,20), pady=(20, 0))
         self.entry_stopWL = customtkinter.CTkEntry(master=self.scale_frame, placeholder_text=f'{self.preset_stopWL}')
-        self.entry_stopWL.grid(row=4, column=0, padx=(20, 0), pady=(20, 10), sticky="nsew")
+        self.entry_stopWL.grid(row=4, column=0, padx=(20,20), pady=(10, 0), sticky="nsew")
 
         self.scale_button = customtkinter.CTkButton(master=self.scale_frame, text='Do Scaling', command=self.do_scaling)
         self.scale_button.grid(row=5, column=0, padx=20, pady=(20, 10))        
@@ -78,7 +77,7 @@ class App(customtkinter.CTk):
         self.checkbox_2.grid(row=2, column=0, pady=(20, 0), padx=20)
 
         self.preprocessing_button = customtkinter.CTkButton(master=self.checkbox_frame, text='Do Preprocessing', command=self.do_preprocessing)
-        self.preprocessing_button.grid(row=3, column=0, padx=20, pady=(20, 10))
+        self.preprocessing_button.grid(row=3, column=0, padx=20, pady=(40, 10))
 
         # Data splitting
         self.splitting_frame = customtkinter.CTkFrame(self, width=140)
@@ -87,14 +86,14 @@ class App(customtkinter.CTk):
         self.preprocessing_label.grid(row=0, column=0, padx=20, pady=(20, 10))
 
         self.preprocessing_label = customtkinter.CTkLabel(self.splitting_frame, text='Random State = 42:', font=customtkinter.CTkFont(size=14))
-        self.preprocessing_label.grid(row=1, column=0, padx=20, pady=(20, 10))
+        self.preprocessing_label.grid(row=1, column=0, padx=(20, 20), pady=(20, 0))
         self.entry_randstate = customtkinter.CTkEntry(master=self.splitting_frame, placeholder_text='42')
-        self.entry_randstate.grid(row=2, column=0, padx=(20, 0), pady=(20, 10), sticky="nsew")
+        self.entry_randstate.grid(row=2, column=0, padx=(20, 20), pady=(10, 0), sticky="nsew")
 
         self.preprocessing_label = customtkinter.CTkLabel(self.splitting_frame, text='Test Size = 20 %:', font=customtkinter.CTkFont(size=14))
-        self.preprocessing_label.grid(row=3, column=0, padx=20, pady=(20, 10))
+        self.preprocessing_label.grid(row=3, column=0, padx=(20, 20), pady=(20, 0))
         self.entry_split = customtkinter.CTkEntry(master=self.splitting_frame, placeholder_text='20')
-        self.entry_split.grid(row=4, column=0, padx=(20, 0), pady=(20, 10), sticky="nsew")
+        self.entry_split.grid(row=4, column=0, padx=(20, 20), pady=(10, 0), sticky="nsew")
 
         self.splitting_button = customtkinter.CTkButton(master=self.splitting_frame, text='Do Splitting', command=self.do_splitting)
         self.splitting_button.grid(row=5, column=0, padx=20, pady=(20, 10))
@@ -106,8 +105,8 @@ class App(customtkinter.CTk):
         self.preprocessing_label.grid(row=0, column=0, padx=20, pady=(20, 10))
 
         self.radio_var = tk.IntVar(value=0)
-        self.label_radio_group = customtkinter.CTkLabel(master=self.regression_frame, text="Method:")
-        self.label_radio_group.grid(row=1, column=0, columnspan=1, padx=10, pady=10, sticky="")
+        # self.label_radio_group = customtkinter.CTkLabel(master=self.regression_frame, text="Method:")
+        # self.label_radio_group.grid(row=1, column=0, columnspan=1, padx=10, pady=10, sticky="")
         self.radio_button_1 = customtkinter.CTkRadioButton(master=self.regression_frame, text='PLS', variable=self.radio_var, value=0)
         self.radio_button_1.grid(row=2, column=0, pady=10, padx=20, sticky="n")
         self.radio_button_2 = customtkinter.CTkRadioButton(master=self.regression_frame, text='SVM', variable=self.radio_var, value=1)
@@ -116,7 +115,7 @@ class App(customtkinter.CTk):
         self.radio_button_3.grid(row=4, column=0, pady=10, padx=20, sticky="n")
 
         self.regression_button = customtkinter.CTkButton(master=self.regression_frame, text='Do Regression', command=self.do_regression)
-        self.regression_button.grid(row=5, column=0, padx=20, pady=(20, 10))
+        self.regression_button.grid(row=5, column=0, padx=20, pady=(40, 10))
 
         # Button config
         self.scale_button.configure(state='disabled')
@@ -127,10 +126,16 @@ class App(customtkinter.CTk):
         # Create a text box
         self.text_frame = customtkinter.CTkFrame(self, width=280)
         self.text_frame.grid(row=2, column=0, columnspan=4, sticky='nsew')
+
+        self.text_frame.columnconfigure(0, weight=1)
+        self.text_frame.columnconfigure(1, weight=1)
+        self.text_frame.columnconfigure(2, weight=1)
+        self.text_frame.columnconfigure(3, weight=1)
+
         self.text_label = customtkinter.CTkLabel(self.text_frame, text='Console Output:', font=customtkinter.CTkFont(size=14, weight='bold'))
-        self.text_label.grid(row=0, column=0, columnspan=3, padx=20, pady=(20, 10))
+        self.text_label.grid(row=0, column=0, padx=(0,80), pady=(50, 0))
         self.text_box = customtkinter.CTkTextbox(self.text_frame)
-        self.text_box.grid(row=1, column=0, columnspan=3, padx=(20, 20), pady=(20, 20), sticky="nsew")
+        self.text_box.grid(row=1, column=0, columnspan=4, padx=(20, 20), pady=(20, 20), sticky="nsew")
 
         sys.stdout = self
 
@@ -152,9 +157,10 @@ class App(customtkinter.CTk):
 
         if len(self.X_df) > 1:
             print('SUCCESS Loading spectra')
+            self.scale_button.configure(state='enabled')
         else:
             print('FAILED Loading Spectra')
-        self.scale_button.configure(state='enabled')
+        
 
     # Function for scaling
     def do_scaling(self):

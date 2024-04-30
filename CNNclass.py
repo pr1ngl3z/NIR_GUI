@@ -44,15 +44,15 @@ class CNN:
 
     def build_model(self):
         self.model = tf.keras.Sequential([
-            layers.Reshape((self.INPUT_DIMS, 1), input_shape=(self.INPUT_DIMS,)),
+            layers.Input((self.INPUT_DIMS,1)),
+            #layers.Reshape((self.INPUT_DIMS, 1)),#, input_shape=(self.INPUT_DIMS,)),
             layers.Conv1D(filters=self.K_NUMBER,
                         kernel_size=self.K_WIDTH,
                         strides=self.K_STRIDE,
                         padding='same', 
                         kernel_initializer=self.K_INIT,
                         kernel_regularizer=self.K_REG,
-                        activation='elu',
-                        input_shape=(self.CONV1D_DIMS,1)),
+                        activation='elu'),#,input_shape=(self.CONV1D_DIMS,1)),
             layers.Dropout(self.DROPOUT),
             layers.Flatten(),
             layers.Dense(self.FC1_DIMS,
@@ -98,14 +98,6 @@ class CNN:
             plt.legend()
             plt.show()
     
-    # def standardize_row(self, X_train, X_val, X_test):
-    #     scaler = StandardScaler()
-    #     X_train_scaled = scaler.fit_transform(X_train.T)
-    #     X_val_scaled = scaler.fit_transform(X_val.T)
-    #     X_test_scaled = scaler.fit_transform(X_test.T)
-    #     return [X_train_scaled.T, X_val_scaled.T, X_test_scaled.T]
-
-
     #staticmethod
     def standardize_row(self, X_train, X_val, X_test):
         scaler = StandardScaler()
