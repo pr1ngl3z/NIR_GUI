@@ -1,6 +1,4 @@
-import os
 import numpy as np
-import pandas as pd
 import tkinter as tk
 from tkinter import ttk
 import customtkinter
@@ -24,10 +22,17 @@ customtkinter.set_default_color_theme('dark-blue')
 class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
+        self.startWL = 930
+        self.stopWL = 1692
+        self.preset_startWL = self.startWL
+        self.preset_stopWL = self.stopWL
 
         # configure window
         self.title("NIR Analyser")
         self.geometry(f"{860}x{720}")
+        self.grid_columnconfigure(1, weight=0)
+        self.grid_columnconfigure((2, 3), weight=0)
+        self.grid_rowconfigure((0, 1), weight=0)
 
         # Load Spectra via Button
         self.X = None
@@ -35,20 +40,24 @@ class App(customtkinter.CTk):
         self.main_button_1 = customtkinter.CTkButton(master=self, text= 'LOAD Spectra', fg_color="transparent", border_width=2, text_color=("gray10", "#DCE4EE"), command=self.open_file_dialog)
         self.main_button_1.grid(row=0, column=0, padx=(20, 20), pady=(20, 20), sticky="nsew")
 
+        # Reset Button
+        self.main_button_2 = customtkinter.CTkButton(master=self, text= 'RESET', fg_color="transparent", border_width=2, text_color=("gray10", "#DCE4EE"), command=self.reset)
+        self.main_button_2.grid(row=0, column=1, padx=(20, 20), pady=(20, 20), sticky="nsew")
+
         # Scale Down
         self.scale_frame = customtkinter.CTkFrame(self, width=140)
         self.scale_frame.grid(row=1, column=0, sticky='nsew')
         self.scale_label = customtkinter.CTkLabel(self.scale_frame, text='Specific WL', font=customtkinter.CTkFont(size=14, weight='bold'))
         self.scale_label.grid(row=0, column=0, padx=20, pady=(20,10))
         
-        self.scale_label1 = customtkinter.CTkLabel(self.scale_frame, text='Start WL (min 930):', font=customtkinter.CTkFont(size=14))
+        self.scale_label1 = customtkinter.CTkLabel(self.scale_frame, text=f'Start WL (min {self.preset_startWL}):', font=customtkinter.CTkFont(size=14))
         self.scale_label1.grid(row=1, column=0, padx=20, pady=(20, 10))
-        self.entry_startWL = customtkinter.CTkEntry(master=self.scale_frame, placeholder_text='930')
+        self.entry_startWL = customtkinter.CTkEntry(master=self.scale_frame, placeholder_text=f'{self.preset_startWL}')
         self.entry_startWL.grid(row=2, column=0, padx=(20, 0), pady=(20, 10), sticky="nsew")
 
-        self.scale_label2 = customtkinter.CTkLabel(self.scale_frame, text='Stop WL (max 1852):', font=customtkinter.CTkFont(size=14))
+        self.scale_label2 = customtkinter.CTkLabel(self.scale_frame, text=f'Stop WL (max {self.preset_stopWL}):', font=customtkinter.CTkFont(size=14))
         self.scale_label2.grid(row=3, column=0, padx=20, pady=(20, 10))
-        self.entry_stopWL = customtkinter.CTkEntry(master=self.scale_frame, placeholder_text='1852')
+        self.entry_stopWL = customtkinter.CTkEntry(master=self.scale_frame, placeholder_text=f'{self.preset_stopWL}')
         self.entry_stopWL.grid(row=4, column=0, padx=(20, 0), pady=(20, 10), sticky="nsew")
 
         self.scale_button = customtkinter.CTkButton(master=self.scale_frame, text='Do Scaling', command=self.do_scaling)
@@ -87,8 +96,8 @@ class App(customtkinter.CTk):
         self.entry_split = customtkinter.CTkEntry(master=self.splitting_frame, placeholder_text='20')
         self.entry_split.grid(row=4, column=0, padx=(20, 0), pady=(20, 10), sticky="nsew")
 
-        self.preprocessing_button = customtkinter.CTkButton(master=self.splitting_frame, text='Do Splitting', command=self.do_splitting)
-        self.preprocessing_button.grid(row=5, column=0, padx=20, pady=(20, 10))
+        self.splitting_button = customtkinter.CTkButton(master=self.splitting_frame, text='Do Splitting', command=self.do_splitting)
+        self.splitting_button.grid(row=5, column=0, padx=20, pady=(20, 10))
         
         # Regression
         self.regression_frame = customtkinter.CTkFrame(self, width=140)
@@ -109,13 +118,19 @@ class App(customtkinter.CTk):
         self.regression_button = customtkinter.CTkButton(master=self.regression_frame, text='Do Regression', command=self.do_regression)
         self.regression_button.grid(row=5, column=0, padx=20, pady=(20, 10))
 
+        # Button config
+        self.scale_button.configure(state='disabled')
+        self.preprocessing_button.configure(state='disabled')
+        self.splitting_button.configure(state='disabled')
+        self.regression_button.configure(state='disabled')
+
         # Create a text box
         self.text_frame = customtkinter.CTkFrame(self, width=280)
-        self.text_frame.grid(row=2, column=0, sticky='nsew')
+        self.text_frame.grid(row=2, column=0, columnspan=4, sticky='nsew')
         self.text_label = customtkinter.CTkLabel(self.text_frame, text='Console Output:', font=customtkinter.CTkFont(size=14, weight='bold'))
-        self.text_label.grid(row=0, column=0, padx=20, pady=(20, 10))
+        self.text_label.grid(row=0, column=0, columnspan=3, padx=20, pady=(20, 10))
         self.text_box = customtkinter.CTkTextbox(self.text_frame)
-        self.text_box.grid(row=1, column=0, padx=(20, 20), pady=(20, 20), sticky="nsew")
+        self.text_box.grid(row=1, column=0, columnspan=3, padx=(20, 20), pady=(20, 20), sticky="nsew")
 
         sys.stdout = self
 
@@ -139,26 +154,28 @@ class App(customtkinter.CTk):
             print('SUCCESS Loading spectra')
         else:
             print('FAILED Loading Spectra')
+        self.scale_button.configure(state='enabled')
 
     # Function for scaling
     def do_scaling(self):
         if len(self.entry_startWL.get()) > 1:
-            self.entry_startWL = int(self.entry_startWL.get())
-        else:
-            self.entry_startWL = 930
-        print('Start WL = '+ str(self.entry_startWL))
+            self.preset_startWL = int(self.entry_startWL.get())
+        # else:
+        #     self.entry_startWL = self.preset_startWL
+        print('Start WL = '+ str(self.preset_startWL))
 
         if len(self.entry_stopWL.get()) > 1:
-            self.entry_stopWL = int(self.entry_stopWL.get())
-        else:
-            self.entry_stopWL = 1852
-        print('Stop WL = ' + str(self.entry_stopWL))
+            self.preset_stopWL = int(self.entry_stopWL.get())
+        # else:
+        #     self.entry_stopWL = self.preset_stopWL
+        print('Stop WL = ' + str(self.preset_stopWL))
 
-        self.X_df_specific = self.X_df.loc[:, self.entry_startWL:self.entry_stopWL]
+        self.X_df_specific = self.X_df.loc[:, self.preset_startWL:self.preset_stopWL]
         self.X = self.X_df_specific.to_numpy()
         self.y = np.array(self.X_df_specific.index)
         self.n_wavelenths = self.X.shape[1]
         print('Number of used wavelengths: '+ str(self.n_wavelenths))
+        self.preprocessing_button.configure(state='enabled')
     
     # Preprocessing from Utils
     def do_preprocessing(self):
@@ -176,6 +193,8 @@ class App(customtkinter.CTk):
             self.X = self.X
             print('No Preprocessing done')
         print('SUCCESS Preprocessing')
+        self.splitting_button.configure(state='enabled')
+
 
     # Funtion for splitting data
     def do_splitting(self):
@@ -195,6 +214,7 @@ class App(customtkinter.CTk):
         self.X_train_val, self.X_test, self.y_train_val, self.y_test = train_test_split(self.X, self.y, test_size=self.test_size, random_state=self.random_state)
         self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(self.X_train_val, self.y_train_val, test_size=0.25, random_state=self.random_state)
         print('SUCCESS Data splitting')
+        self.regression_button.configure(state='enabled')
     
     # Function for regressions
     def do_regression(self):
@@ -246,7 +266,7 @@ class App(customtkinter.CTk):
             rmse_vv = root_mean_squared_error(self.y_val, y_vv)
 
             print_metrics(score_c, score_vv, score_cv, rmse_c, rmse_vv, rmse_cv)
-            plot_metrics(self.radio_var.get(), self.y_test, y_cv, score_c, score_vv, score_cv, rmse_c, rmse_vv, rmse_cv, self.X, self.n_wavelenths, self.entry_startWL, self.entry_stopWL)
+            plot_metrics(self.radio_var.get(), self.y_test, y_cv, score_c, score_vv, score_cv, rmse_c, rmse_vv, rmse_cv, self.X, self.n_wavelenths, self.preset_startWL, self.preset_stopWL)
 
         # SVM
         elif self.radio_var.get() == 1:
@@ -291,7 +311,7 @@ class App(customtkinter.CTk):
             rmse_vv = root_mean_squared_error(self.y_val, y_vv)
 
             print_metrics(score_c, score_vv, score_cv, rmse_c, rmse_vv, rmse_cv)
-            plot_metrics(self.radio_var.get(), self.y_test, y_cv, score_c, score_vv, score_cv, rmse_c, rmse_vv, rmse_cv, self.X, self.n_wavelenths, self.entry_startWL, self.entry_stopWL)
+            plot_metrics(self.radio_var.get(), self.y_test, y_cv, score_c, score_vv, score_cv, rmse_c, rmse_vv, rmse_cv, self.X, self.n_wavelenths, self.preset_startWL, self.preset_stopWL)
 
         # CNN
         elif self.radio_var.get() == 2:
@@ -335,12 +355,35 @@ class App(customtkinter.CTk):
             rmse_vv = root_mean_squared_error(self.y_val, y_vv)
 
             print_metrics(score_c, score_vv, score_cv, rmse_c, rmse_vv, rmse_cv)
-            plot_metrics(self.radio_var.get(), self.y_test, y_cv, score_c, score_vv, score_cv, rmse_c, rmse_vv, rmse_cv, self.X, self.n_wavelenths, self.entry_startWL, self.entry_stopWL)
+            plot_metrics(self.radio_var.get(), self.y_test, y_cv, score_c, score_vv, score_cv, rmse_c, rmse_vv, rmse_cv, self.X, self.n_wavelenths, self.preset_startWL, self.preset_stopWL)
             
         else:
             print('No valid Choice!')
 
-        
+    # Function RESET    
+    def reset(self):
+        self.X = None
+        self.y = None
+        self.X_df = None
+        self.X_df_specific = None
+        self.n_wavelenths = None
+        self.preset_startWL = self.startWL
+        self.preset_stopWL = self.stopWL
+        self.entry_startWL.delete(0, 'end')  
+        self.entry_stopWL.delete(0, 'end')
+        self.check_savgol.set(False)
+        self.check_snv.set(False)      
+        self.entry_randstate.delete(0, 'end')
+        self.entry_split.delete(0, 'end')
+        self.entry_split_answer = None
+        self.random_state = None
+        self.test_size = None
+        self.radio_var.set(0)
+        self.text_box.delete('1.0', tk.END)
+        self.scale_button.configure(state='disabled')
+        self.preprocessing_button.configure(state='disabled')
+        self.splitting_button.configure(state='disabled')
+        self.regression_button.configure(state='disabled')
 
 
 if __name__ == "__main__":
