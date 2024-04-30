@@ -186,13 +186,19 @@ class App(customtkinter.CTk):
     # Preprocessing from Utils
     def do_preprocessing(self):
         if self.check_savgol.get() == True and self.check_snv.get() == False:
-            self.X = savgol(self.X, 25, 2, deriv=1)
+            if self.n_wavelenths > 25:
+                self.X = savgol(self.X, 25, 2, deriv=1)
+            else:
+                self.X = savgol(self.X, self.n_wavelenths, 2, deriv=1)
             print('Savgol done')
         elif self.check_savgol.get() == False and self.check_snv.get() == True:
             self.X = snv(self.X)
             print('SNV done')
         elif self.check_savgol.get() == True and self.check_snv.get() == True:
-            self.X = savgol(self.X, 25, 2, deriv=1)
+            if self.n_wavelenths > 25:
+                self.X = savgol(self.X, 25, 2, deriv=1)
+            else:
+                self.X = savgol(self.X, self.n_wavelenths, 2, deriv=1)
             self.X = snv(self.X)
             print('Savgol AND SNV done')
         else:
@@ -234,7 +240,10 @@ class App(customtkinter.CTk):
         # PLS
         if self.radio_var.get() == 0:
             print('Starting PLS Regression')
-            parametersPLS = {'n_components': np.arange(1,80,1)}
+            if self.n_wavelenths > 80:
+                parametersPLS = {'n_components': np.arange(1,80,1)}
+            else:
+                parametersPLS = {'n_components': np.arange(1,self.n_wavelenths,1)}
             pls = PLSRegression()
             cv = 10
             num_fits = cv * sum([len(v) for v in parametersPLS.values()])
