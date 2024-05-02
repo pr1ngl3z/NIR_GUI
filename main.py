@@ -26,6 +26,7 @@ class App(customtkinter.CTk):
         self.stopWL = 1692
         self.preset_startWL = self.startWL
         self.preset_stopWL = self.stopWL
+        self.savgol_bool = False
 
         # configure window
         self.title("NIR Analyser")
@@ -72,12 +73,15 @@ class App(customtkinter.CTk):
         self.checkbox_1 = customtkinter.CTkCheckBox(master=self.checkbox_frame, text='Savgol_Filter', variable=self.check_savgol, onvalue=True, offvalue=False)
         self.checkbox_1.grid(row=1, column=0, pady=(20, 0), padx=20)
 
+        self.dialog_savgol = customtkinter.CTkButton(master=self.checkbox_frame, text='Change Savgol Params', command=self.change_savgol_params)
+        self.dialog_savgol.grid(row=2, column=0, pady=(20, 0), padx=20)
+
         self.check_snv = customtkinter.BooleanVar(value=False)
         self.checkbox_2 = customtkinter.CTkCheckBox(master=self.checkbox_frame, text='SNV', variable=self.check_snv, onvalue=True, offvalue=False)
-        self.checkbox_2.grid(row=2, column=0, pady=(20, 0), padx=20)
+        self.checkbox_2.grid(row=3, column=0, pady=(20, 0), padx=20)
 
         self.preprocessing_button = customtkinter.CTkButton(master=self.checkbox_frame, text='Do Preprocessing', command=self.do_preprocessing)
-        self.preprocessing_button.grid(row=3, column=0, padx=20, pady=(40, 10))
+        self.preprocessing_button.grid(row=4, column=0, padx=20, pady=(40, 10))
 
         # Data splitting
         self.splitting_frame = customtkinter.CTkFrame(self, width=140)
@@ -183,24 +187,39 @@ class App(customtkinter.CTk):
         print('Number of used wavelengths: '+ str(self.n_wavelenths))
         self.preprocessing_button.configure(state='enabled')
     
+    # Changing Parameters for Savgol Filter
+    def change_savgol_params(self):
+        dialog = customtkinter.CTkInputDialog(text="Type in: Window_length, Polyorder, deriv, like: 25,2,1", title="Savgol Parameters")
+        self.input_savgol = dialog.get_input()
+        self.window_length = int(self.input_savgol.split(sep=',')[0])
+        self.polyorder = int(self.input_savgol.split(sep=',')[1])
+        self.deriv = int(self.input_savgol.split(sep=',')[2])
+        print("Window_length:", str(self.window_length))
+        print("Polyorder:", str(self.polyorder))
+        print("Deriv:", str(self.deriv))
+        self.savgol_bool = True
+    
     # Preprocessing from Utils
     def do_preprocessing(self):
         if self.check_savgol.get() == True and self.check_snv.get() == False:
-            if self.n_wavelenths > 25:
-                self.X = savgol(self.X, 25, 2, deriv=1)
+            if self.savgol_bool == True:
+                self.X = savgol(self.X, self.window_length, self.polyorder, deriv=self.deriv)
             else:
-                self.X = savgol(self.X, self.n_wavelenths, 2, deriv=1)
+                self.X = savgol(self.X, 25, 2, deriv=1)
             print('Savgol done')
+        
         elif self.check_savgol.get() == False and self.check_snv.get() == True:
             self.X = snv(self.X)
             print('SNV done')
+        
         elif self.check_savgol.get() == True and self.check_snv.get() == True:
-            if self.n_wavelenths > 25:
-                self.X = savgol(self.X, 25, 2, deriv=1)
+            if self.savgol_bool == True:
+                self.X = savgol(self.X, self.window_length, self.polyorder, deriv=self.deriv)
             else:
-                self.X = savgol(self.X, self.n_wavelenths, 2, deriv=1)
+                self.X = savgol(self.X, 25, 2, deriv=1)
             self.X = snv(self.X)
             print('Savgol AND SNV done')
+        
         else:
             self.X = self.X
             print('No Preprocessing done')
@@ -399,6 +418,7 @@ class App(customtkinter.CTk):
         self.preprocessing_button.configure(state='disabled')
         self.splitting_button.configure(state='disabled')
         self.regression_button.configure(state='disabled')
+        self.savgol_bool = False
 
 
 if __name__ == "__main__":
