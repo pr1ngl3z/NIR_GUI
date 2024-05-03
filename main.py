@@ -26,13 +26,10 @@ class App(customtkinter.CTk):
         self.stopWL = 1692
         self.preset_startWL = self.startWL
         self.preset_stopWL = self.stopWL
-        self.savgol_bool = False
 
         # configure window
         self.title("NIR Analyser")
-        self.geometry(f"{860}x{720}")
-        self.grid_rowconfigure(2, weight=1)
-        self.grid_rowconfigure((0, 1), weight=0)
+        self.geometry(f"{1300}x{550}")
 
         # Load Spectra via Button
         self.X = None
@@ -45,20 +42,34 @@ class App(customtkinter.CTk):
         self.main_button_2.grid(row=0, column=1, padx=(20, 20), pady=(20, 20), sticky="nsew")
 
         # Scale Down
+        self.var_startWL = tk.IntVar(value=930)
+        self.var_stopWL = tk.IntVar(value=1692)
+
         self.scale_frame = customtkinter.CTkFrame(self, width=140)
-        self.scale_frame.grid(row=1, column=0, sticky='nsew')
+        self.scale_frame.grid(row=1, column=0, columnspan=2, sticky='nsew')
         self.scale_label = customtkinter.CTkLabel(self.scale_frame, text='Specific WL', font=customtkinter.CTkFont(size=14, weight='bold'))
         self.scale_label.grid(row=0, column=0, padx=20, pady=(20,10))
         
-        self.scale_label1 = customtkinter.CTkLabel(self.scale_frame, text=f'Start WL (min {self.preset_startWL}):', font=customtkinter.CTkFont(size=14))
-        self.scale_label1.grid(row=1, column=0, padx=(20,20), pady=(20, 0))
-        self.entry_startWL = customtkinter.CTkEntry(master=self.scale_frame, placeholder_text=f'{self.preset_startWL}')
-        self.entry_startWL.grid(row=2, column=0, padx=(20,20), pady=(10, 0), sticky="nsew")
+        self.scale_label1 = customtkinter.CTkLabel(self.scale_frame, text=f'Start WL (min {self.preset_startWL}):', font=customtkinter.CTkFont(size=12))
+        self.scale_label1.grid(row=1, column=0, padx=20, pady=(20,5), sticky='w')
+        self.slider_startWL = customtkinter.CTkSlider(self.scale_frame, variable=self.var_startWL, from_=930, to=1692, number_of_steps=762, command=self.update_startWL)
+        self.slider_startWL.grid(row=2, column=0, padx=(10, 10), pady=(5, 5), sticky="e")
+        self.update_startWL(self.slider_startWL.get())
 
-        self.scale_label2 = customtkinter.CTkLabel(self.scale_frame, text=f'Stop WL (max {self.preset_stopWL}):', font=customtkinter.CTkFont(size=14))
-        self.scale_label2.grid(row=3, column=0, padx=(20,20), pady=(20, 0))
-        self.entry_stopWL = customtkinter.CTkEntry(master=self.scale_frame, placeholder_text=f'{self.preset_stopWL}')
-        self.entry_stopWL.grid(row=4, column=0, padx=(20,20), pady=(10, 0), sticky="nsew")
+        self.scale_label2 = customtkinter.CTkLabel(self.scale_frame, text=f'Stop WL (max {self.preset_stopWL}):', font=customtkinter.CTkFont(size=12))
+        self.scale_label2.grid(row=3, column=0, padx=20, pady=(10,5), sticky='w')
+        self.slider_stopWL = customtkinter.CTkSlider(self.scale_frame, variable=self.var_stopWL, from_=930, to=1692, number_of_steps=762, command=self.update_stopWL)
+        self.slider_stopWL.grid(row=4, column=0, padx=(10, 10), pady=(5, 5), sticky="e")
+        self.update_stopWL(self.slider_stopWL.get())
+
+
+
+        # self.entry_startWL = customtkinter.CTkEntry(master=self.scale_frame, placeholder_text=f'{self.preset_startWL}')
+        # self.entry_startWL.grid(row=2, column=0, padx=(20,20), pady=(10, 0), sticky="nsew")
+
+        
+        # self.entry_stopWL = customtkinter.CTkEntry(master=self.scale_frame, placeholder_text=f'{self.preset_stopWL}')
+        # self.entry_stopWL.grid(row=4, column=0, padx=(20,20), pady=(10, 0), sticky="nsew")
 
         self.scale_button = customtkinter.CTkButton(master=self.scale_frame, text='Do Scaling', command=self.do_scaling)
         self.scale_button.grid(row=5, column=0, padx=20, pady=(20, 10))        
@@ -69,36 +80,36 @@ class App(customtkinter.CTk):
         self.var_deriv = tk.IntVar(value=1)
 
         self.checkbox_frame = customtkinter.CTkFrame(self, width=420)
-        self.checkbox_frame.grid(row=1, column=1, columnspan=2, sticky='nsew')
+        self.checkbox_frame.grid(row=1, column=2, columnspan=2, sticky='nsew')
         self.preprocessing_label = customtkinter.CTkLabel(self.checkbox_frame, text='Choose Preprocessing', font=customtkinter.CTkFont(size=14, weight='bold'))
         self.preprocessing_label.grid(row=0, column=0, padx=20, pady=(20, 10))
 
         self.check_savgol = customtkinter.BooleanVar(value=False)
-        self.checkbox_1 = customtkinter.CTkCheckBox(master=self.checkbox_frame, text='Savgol_Filter', variable=self.check_savgol, onvalue=True, offvalue=False)
+        self.checkbox_1 = customtkinter.CTkCheckBox(master=self.checkbox_frame, text='Savgol_Filter', variable=self.check_savgol, onvalue=True, offvalue=False, font=customtkinter.CTkFont(size=12, weight='bold'))
         self.checkbox_1.grid(row=1, column=0, pady=(20, 0), padx=20)
 
         # self.dialog_savgol = customtkinter.CTkButton(master=self.checkbox_frame, text='Change Savgol Params', command=self.change_savgol_params)
         # self.dialog_savgol.grid(row=2, column=0, pady=(20, 0), padx=20)
-        self.var_window_label = customtkinter.CTkLabel(self.checkbox_frame, text='Window_Length:', font=customtkinter.CTkFont(size=14))
-        self.var_window_label.grid(row=2, column=0, padx=0, pady=(20,5))
+        self.var_window_label = customtkinter.CTkLabel(self.checkbox_frame, text='Window_Length:', font=customtkinter.CTkFont(size=12))
+        self.var_window_label.grid(row=2, column=0, padx=20, pady=(20,5), sticky='w')
         self.slider_winLength = customtkinter.CTkSlider(self.checkbox_frame, variable=self.var_window_length, from_=1, to=50, number_of_steps=49, command=self.update_window_length)
-        self.slider_winLength.grid(row=3, column=0, padx=(20, 10), pady=(5, 5), sticky="ew")
+        self.slider_winLength.grid(row=3, column=0, padx=(20, 10), pady=(5, 5), sticky="e")
         self.update_window_length(self.slider_winLength.get())
 
-        self.var_polyorder_label = customtkinter.CTkLabel(self.checkbox_frame, text='Polyorder:', font=customtkinter.CTkFont(size=14))
-        self.var_polyorder_label.grid(row=4, column=0, padx=0, pady=(10,5))
+        self.var_polyorder_label = customtkinter.CTkLabel(self.checkbox_frame, text='Polyorder:', font=customtkinter.CTkFont(size=12))
+        self.var_polyorder_label.grid(row=4, column=0, padx=20, pady=(10,5), sticky='w')
         self.slider_polyorder = customtkinter.CTkSlider(self.checkbox_frame, variable=self.var_polyorder, from_=0, to=5, number_of_steps=5, command=self.update_polyorder)
-        self.slider_polyorder.grid(row=5, column=0, padx=(20, 10), pady=(5, 5), sticky="ew")
+        self.slider_polyorder.grid(row=5, column=0, padx=(20, 10), pady=(5, 5), sticky="e")
         self.update_polyorder(self.slider_polyorder.get())
 
-        self.var_deriv_label = customtkinter.CTkLabel(self.checkbox_frame, text='Deriv:', font=customtkinter.CTkFont(size=14))
-        self.var_deriv_label.grid(row=6, column=0, padx=0, pady=(10,5))
+        self.var_deriv_label = customtkinter.CTkLabel(self.checkbox_frame, text='Deriv:', font=customtkinter.CTkFont(size=12))
+        self.var_deriv_label.grid(row=6, column=0, padx=20, pady=(10,5), sticky='w')
         self.slider_deriv = customtkinter.CTkSlider(self.checkbox_frame, variable=self.var_deriv, from_=0, to=5, number_of_steps=5, command=self.update_deriv)
-        self.slider_deriv.grid(row=7, column=0, padx=(20, 10), pady=(5, 10), sticky="ew")
+        self.slider_deriv.grid(row=7, column=0, padx=(20, 10), pady=(5, 10), sticky="e")
         self.update_deriv(self.slider_deriv.get())
 
         self.check_snv = customtkinter.BooleanVar(value=False)
-        self.checkbox_2 = customtkinter.CTkCheckBox(master=self.checkbox_frame, text='SNV', variable=self.check_snv, onvalue=True, offvalue=False)
+        self.checkbox_2 = customtkinter.CTkCheckBox(master=self.checkbox_frame, text='SNV', variable=self.check_snv, onvalue=True, offvalue=False, font=customtkinter.CTkFont(size=12, weight='bold'))
         self.checkbox_2.grid(row=8, column=0, pady=(20, 10), padx=20)
 
         self.preprocessing_button = customtkinter.CTkButton(master=self.checkbox_frame, text='Do Preprocessing', command=self.do_preprocessing)
@@ -106,16 +117,16 @@ class App(customtkinter.CTk):
 
         # Data splitting
         self.splitting_frame = customtkinter.CTkFrame(self, width=140)
-        self.splitting_frame.grid(row=1, column=3, sticky='nsew')
+        self.splitting_frame.grid(row=1, column=4, sticky='nsew')
         self.preprocessing_label = customtkinter.CTkLabel(self.splitting_frame, text='Data Splitting', font=customtkinter.CTkFont(size=14, weight='bold'))
         self.preprocessing_label.grid(row=0, column=0, padx=20, pady=(20, 10))
 
-        self.preprocessing_label = customtkinter.CTkLabel(self.splitting_frame, text='Random State = 42:', font=customtkinter.CTkFont(size=14))
+        self.preprocessing_label = customtkinter.CTkLabel(self.splitting_frame, text='Random State = 42:', font=customtkinter.CTkFont(size=12))
         self.preprocessing_label.grid(row=1, column=0, padx=(20, 20), pady=(20, 0))
         self.entry_randstate = customtkinter.CTkEntry(master=self.splitting_frame, placeholder_text='42')
         self.entry_randstate.grid(row=2, column=0, padx=(20, 20), pady=(10, 0), sticky="nsew")
 
-        self.preprocessing_label = customtkinter.CTkLabel(self.splitting_frame, text='Test Size = 20 %:', font=customtkinter.CTkFont(size=14))
+        self.preprocessing_label = customtkinter.CTkLabel(self.splitting_frame, text='Test Size = 20 %:', font=customtkinter.CTkFont(size=12))
         self.preprocessing_label.grid(row=3, column=0, padx=(20, 20), pady=(20, 0))
         self.entry_split = customtkinter.CTkEntry(master=self.splitting_frame, placeholder_text='20')
         self.entry_split.grid(row=4, column=0, padx=(20, 20), pady=(10, 0), sticky="nsew")
@@ -125,18 +136,18 @@ class App(customtkinter.CTk):
         
         # Regression
         self.regression_frame = customtkinter.CTkFrame(self, width=140)
-        self.regression_frame.grid(row=1, column=4, sticky='nsew')
+        self.regression_frame.grid(row=1, column=5, sticky='nsew')
         self.preprocessing_label = customtkinter.CTkLabel(self.regression_frame, text='Regression', font=customtkinter.CTkFont(size=14, weight='bold'))
         self.preprocessing_label.grid(row=0, column=0, padx=20, pady=(20, 10))
 
         self.radio_var = tk.IntVar(value=0)
         # self.label_radio_group = customtkinter.CTkLabel(master=self.regression_frame, text="Method:")
         # self.label_radio_group.grid(row=1, column=0, columnspan=1, padx=10, pady=10, sticky="")
-        self.radio_button_1 = customtkinter.CTkRadioButton(master=self.regression_frame, text='PLS', variable=self.radio_var, value=0)
-        self.radio_button_1.grid(row=2, column=0, pady=10, padx=20, sticky="n")
-        self.radio_button_2 = customtkinter.CTkRadioButton(master=self.regression_frame, text='SVM', variable=self.radio_var, value=1)
+        self.radio_button_1 = customtkinter.CTkRadioButton(master=self.regression_frame, text='PLS', variable=self.radio_var, value=0, font=customtkinter.CTkFont(size=12, weight='bold'))
+        self.radio_button_1.grid(row=2, column=0, pady=(20,10), padx=20, sticky="n")
+        self.radio_button_2 = customtkinter.CTkRadioButton(master=self.regression_frame, text='SVM', variable=self.radio_var, value=1, font=customtkinter.CTkFont(size=12, weight='bold'))
         self.radio_button_2.grid(row=3, column=0, pady=10, padx=20, sticky="n")
-        self.radio_button_3 = customtkinter.CTkRadioButton(master=self.regression_frame, text='CNN', variable=self.radio_var, value=2)
+        self.radio_button_3 = customtkinter.CTkRadioButton(master=self.regression_frame, text='CNN', variable=self.radio_var, value=2, font=customtkinter.CTkFont(size=12, weight='bold'))
         self.radio_button_3.grid(row=4, column=0, pady=10, padx=20, sticky="n")
 
         self.regression_button = customtkinter.CTkButton(master=self.regression_frame, text='Do Regression', command=self.do_regression)
@@ -150,17 +161,12 @@ class App(customtkinter.CTk):
 
         # Create a text box
         self.text_frame = customtkinter.CTkFrame(self, width=280)
-        self.text_frame.grid(row=2, column=0, columnspan=4, sticky='nsew')
-
-        self.text_frame.columnconfigure(0, weight=1)
-        self.text_frame.columnconfigure(1, weight=1)
-        self.text_frame.columnconfigure(2, weight=1)
-        self.text_frame.columnconfigure(3, weight=1)
+        self.text_frame.grid(row=1, column=6, columnspan=2, sticky='nsew')
 
         self.text_label = customtkinter.CTkLabel(self.text_frame, text='Console Output:', font=customtkinter.CTkFont(size=14, weight='bold'))
-        self.text_label.grid(row=0, column=0, padx=(0,80), pady=(50, 0))
-        self.text_box = customtkinter.CTkTextbox(self.text_frame)
-        self.text_box.grid(row=1, column=0, columnspan=4, padx=(20, 20), pady=(20, 20), sticky="nsew")
+        self.text_label.grid(row=0, column=0, padx=20, pady=(20, 10))
+        self.text_box = customtkinter.CTkTextbox(self.text_frame, height=400, width=280)
+        self.text_box.grid(row=1, column=0, columnspan=2, padx=(20, 20), pady=(20, 20), sticky="nsew")
 
         sys.stdout = self
 
@@ -185,6 +191,14 @@ class App(customtkinter.CTk):
         self.label_deriv = customtkinter.CTkLabel(self.checkbox_frame, text=f'{value}')
         self.label_deriv.grid(row=7,column=1)
 
+    def update_startWL(self, value):
+        self.label_slider_startWL = customtkinter.CTkLabel(self.scale_frame, text=f'{value}')
+        self.label_slider_startWL.grid(row=2,column=1)
+
+    def update_stopWL(self, value):
+        self.label_slider_stopWL = customtkinter.CTkLabel(self.scale_frame, text=f'{value}')
+        self.label_slider_stopWL.grid(row=4,column=1)
+
     # Function for choosing folder path and load spectra
     def open_file_dialog(self):
         folderpath = customtkinter.filedialog.askdirectory()
@@ -201,18 +215,8 @@ class App(customtkinter.CTk):
 
     # Function for scaling
     def do_scaling(self):
-        if len(self.entry_startWL.get()) > 1:
-            self.preset_startWL = int(self.entry_startWL.get())
-        # else:
-        #     self.entry_startWL = self.preset_startWL
-        print('Start WL = '+ str(self.preset_startWL))
-
-        if len(self.entry_stopWL.get()) > 1:
-            self.preset_stopWL = int(self.entry_stopWL.get())
-        # else:
-        #     self.entry_stopWL = self.preset_stopWL
-        print('Stop WL = ' + str(self.preset_stopWL))
-
+        self.preset_startWL = int(self.var_startWL.get())
+        self.preset_stopWL = int(self.var_stopWL.get())
         self.X_df_specific = self.X_df.loc[:, self.preset_startWL:self.preset_stopWL]
         self.X = self.X_df_specific.to_numpy()
         self.y = np.array(self.X_df_specific.index)
@@ -220,25 +224,13 @@ class App(customtkinter.CTk):
         print('Number of used wavelengths: '+ str(self.n_wavelenths))
         self.preprocessing_button.configure(state='enabled')
     
-    # Changing Parameters for Savgol Filter
-    def change_savgol_params(self):
-        dialog = customtkinter.CTkInputDialog(text="Type in: Window_length, Polyorder, deriv, like: 25,2,1", title="Savgol Parameters")
-        self.input_savgol = dialog.get_input()
-        self.window_length = int(self.input_savgol.split(sep=',')[0])
-        self.polyorder = int(self.input_savgol.split(sep=',')[1])
-        self.deriv = int(self.input_savgol.split(sep=',')[2])
-        print("Window_length:", str(self.window_length))
-        print("Polyorder:", str(self.polyorder))
-        print("Deriv:", str(self.deriv))
-        self.savgol_bool = True
-    
     # Preprocessing from Utils
     def do_preprocessing(self):
+        savgol_wl = int(self.var_window_length.get())
+        savgol_poly = int(self.var_polyorder.get())
+        savgol_deriv = int(self.var_deriv.get())
         if self.check_savgol.get() == True and self.check_snv.get() == False:
-            if self.savgol_bool == True:
-                self.X = savgol(self.X, self.window_length, self.polyorder, deriv=self.deriv)
-            else:
-                self.X = savgol(self.X, 25, 2, deriv=1)
+            self.X = savgol(self.X, savgol_wl, savgol_poly, deriv=savgol_deriv)
             print('Savgol done')
         
         elif self.check_savgol.get() == False and self.check_snv.get() == True:
@@ -246,10 +238,7 @@ class App(customtkinter.CTk):
             print('SNV done')
         
         elif self.check_savgol.get() == True and self.check_snv.get() == True:
-            if self.savgol_bool == True:
-                self.X = savgol(self.X, self.window_length, self.polyorder, deriv=self.deriv)
-            else:
-                self.X = savgol(self.X, 25, 2, deriv=1)
+            self.X = savgol(self.X, savgol_wl, savgol_poly, deriv=savgol_deriv)
             self.X = snv(self.X)
             print('Savgol AND SNV done')
         
@@ -436,8 +425,6 @@ class App(customtkinter.CTk):
         self.n_wavelenths = None
         self.preset_startWL = self.startWL
         self.preset_stopWL = self.stopWL
-        self.entry_startWL.delete(0, 'end')  
-        self.entry_stopWL.delete(0, 'end')
         self.check_savgol.set(False)
         self.check_snv.set(False)      
         self.entry_randstate.delete(0, 'end')
@@ -451,7 +438,6 @@ class App(customtkinter.CTk):
         self.preprocessing_button.configure(state='disabled')
         self.splitting_button.configure(state='disabled')
         self.regression_button.configure(state='disabled')
-        self.savgol_bool = False
 
 
 if __name__ == "__main__":
