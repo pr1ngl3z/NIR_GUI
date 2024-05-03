@@ -64,8 +64,12 @@ class App(customtkinter.CTk):
         self.scale_button.grid(row=5, column=0, padx=20, pady=(20, 10))        
         
         # Preprocessing
-        self.checkbox_frame = customtkinter.CTkFrame(self, width=140)
-        self.checkbox_frame.grid(row=1, column=1, rowspan=3, sticky='nsew')
+        self.var_window_length = tk.IntVar(value=25)
+        self.var_polyorder = tk.IntVar(value=2)
+        self.var_deriv = tk.IntVar(value=1)
+
+        self.checkbox_frame = customtkinter.CTkFrame(self, width=420)
+        self.checkbox_frame.grid(row=1, column=1, columnspan=2, sticky='nsew')
         self.preprocessing_label = customtkinter.CTkLabel(self.checkbox_frame, text='Choose Preprocessing', font=customtkinter.CTkFont(size=14, weight='bold'))
         self.preprocessing_label.grid(row=0, column=0, padx=20, pady=(20, 10))
 
@@ -73,19 +77,36 @@ class App(customtkinter.CTk):
         self.checkbox_1 = customtkinter.CTkCheckBox(master=self.checkbox_frame, text='Savgol_Filter', variable=self.check_savgol, onvalue=True, offvalue=False)
         self.checkbox_1.grid(row=1, column=0, pady=(20, 0), padx=20)
 
-        self.dialog_savgol = customtkinter.CTkButton(master=self.checkbox_frame, text='Change Savgol Params', command=self.change_savgol_params)
-        self.dialog_savgol.grid(row=2, column=0, pady=(20, 0), padx=20)
+        # self.dialog_savgol = customtkinter.CTkButton(master=self.checkbox_frame, text='Change Savgol Params', command=self.change_savgol_params)
+        # self.dialog_savgol.grid(row=2, column=0, pady=(20, 0), padx=20)
+        self.var_window_label = customtkinter.CTkLabel(self.checkbox_frame, text='Window_Length:', font=customtkinter.CTkFont(size=14))
+        self.var_window_label.grid(row=2, column=0, padx=0, pady=(20,5))
+        self.slider_winLength = customtkinter.CTkSlider(self.checkbox_frame, variable=self.var_window_length, from_=1, to=50, number_of_steps=49, command=self.update_window_length)
+        self.slider_winLength.grid(row=3, column=0, padx=(20, 10), pady=(5, 5), sticky="ew")
+        self.update_window_length(self.slider_winLength.get())
+
+        self.var_polyorder_label = customtkinter.CTkLabel(self.checkbox_frame, text='Polyorder:', font=customtkinter.CTkFont(size=14))
+        self.var_polyorder_label.grid(row=4, column=0, padx=0, pady=(10,5))
+        self.slider_polyorder = customtkinter.CTkSlider(self.checkbox_frame, variable=self.var_polyorder, from_=0, to=5, number_of_steps=5, command=self.update_polyorder)
+        self.slider_polyorder.grid(row=5, column=0, padx=(20, 10), pady=(5, 5), sticky="ew")
+        self.update_polyorder(self.slider_polyorder.get())
+
+        self.var_deriv_label = customtkinter.CTkLabel(self.checkbox_frame, text='Deriv:', font=customtkinter.CTkFont(size=14))
+        self.var_deriv_label.grid(row=6, column=0, padx=0, pady=(10,5))
+        self.slider_deriv = customtkinter.CTkSlider(self.checkbox_frame, variable=self.var_deriv, from_=0, to=5, number_of_steps=5, command=self.update_deriv)
+        self.slider_deriv.grid(row=7, column=0, padx=(20, 10), pady=(5, 10), sticky="ew")
+        self.update_deriv(self.slider_deriv.get())
 
         self.check_snv = customtkinter.BooleanVar(value=False)
         self.checkbox_2 = customtkinter.CTkCheckBox(master=self.checkbox_frame, text='SNV', variable=self.check_snv, onvalue=True, offvalue=False)
-        self.checkbox_2.grid(row=3, column=0, pady=(20, 0), padx=20)
+        self.checkbox_2.grid(row=8, column=0, pady=(20, 10), padx=20)
 
         self.preprocessing_button = customtkinter.CTkButton(master=self.checkbox_frame, text='Do Preprocessing', command=self.do_preprocessing)
-        self.preprocessing_button.grid(row=4, column=0, padx=20, pady=(40, 10))
+        self.preprocessing_button.grid(row=9, column=0, padx=20, pady=(20, 20))
 
         # Data splitting
         self.splitting_frame = customtkinter.CTkFrame(self, width=140)
-        self.splitting_frame.grid(row=1, column=2, sticky='nsew')
+        self.splitting_frame.grid(row=1, column=3, sticky='nsew')
         self.preprocessing_label = customtkinter.CTkLabel(self.splitting_frame, text='Data Splitting', font=customtkinter.CTkFont(size=14, weight='bold'))
         self.preprocessing_label.grid(row=0, column=0, padx=20, pady=(20, 10))
 
@@ -104,7 +125,7 @@ class App(customtkinter.CTk):
         
         # Regression
         self.regression_frame = customtkinter.CTkFrame(self, width=140)
-        self.regression_frame.grid(row=1, column=3, sticky='nsew')
+        self.regression_frame.grid(row=1, column=4, sticky='nsew')
         self.preprocessing_label = customtkinter.CTkLabel(self.regression_frame, text='Regression', font=customtkinter.CTkFont(size=14, weight='bold'))
         self.preprocessing_label.grid(row=0, column=0, padx=20, pady=(20, 10))
 
@@ -151,6 +172,18 @@ class App(customtkinter.CTk):
     def flush(self):
         # This could be used to ensure the text box is updated promptly, but in this case it does nothing
         pass
+
+    def update_window_length(self, value):
+        self.label_window_length = customtkinter.CTkLabel(self.checkbox_frame, text=f'{value}')
+        self.label_window_length.grid(row=3,column=1)    
+    
+    def update_polyorder(self, value):
+        self.label_polyorder = customtkinter.CTkLabel(self.checkbox_frame, text=f'{value}')
+        self.label_polyorder.grid(row=5,column=1, padx=(10,10)) 
+
+    def update_deriv(self, value):
+        self.label_deriv = customtkinter.CTkLabel(self.checkbox_frame, text=f'{value}')
+        self.label_deriv.grid(row=7,column=1)
 
     # Function for choosing folder path and load spectra
     def open_file_dialog(self):
