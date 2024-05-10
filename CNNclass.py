@@ -40,7 +40,7 @@ class CNN:
         self.K_INIT = HeNormal(seed=42)
 
         self.reproducible_comp()
-        self.model = self.build_model()
+        #self.model = self.build_model()
 
     def build_model(self):
         self.model = tf.keras.Sequential([
@@ -98,7 +98,6 @@ class CNN:
             plt.legend()
             plt.show()
     
-    #staticmethod
     def standardize_row(self, X_train, X_val, X_test):
         scaler = StandardScaler()
         X_train_scaled = scaler.fit_transform(X_train)
@@ -106,7 +105,6 @@ class CNN:
         X_test_scaled = scaler.transform(X_test)
         return X_train_scaled, X_val_scaled, X_test_scaled
 
-    #staticmethod
     def standardize_column(self, X_train, X_val, X_test):
         scaler = StandardScaler().fit(X_train)
         X_train_scaled = scaler.transform(X_train)

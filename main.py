@@ -62,15 +62,6 @@ class App(customtkinter.CTk):
         self.slider_stopWL.grid(row=4, column=0, padx=(10, 10), pady=(5, 5), sticky="e")
         self.update_stopWL(self.slider_stopWL.get())
 
-
-
-        # self.entry_startWL = customtkinter.CTkEntry(master=self.scale_frame, placeholder_text=f'{self.preset_startWL}')
-        # self.entry_startWL.grid(row=2, column=0, padx=(20,20), pady=(10, 0), sticky="nsew")
-
-        
-        # self.entry_stopWL = customtkinter.CTkEntry(master=self.scale_frame, placeholder_text=f'{self.preset_stopWL}')
-        # self.entry_stopWL.grid(row=4, column=0, padx=(20,20), pady=(10, 0), sticky="nsew")
-
         self.scale_button = customtkinter.CTkButton(master=self.scale_frame, text='Do Scaling', command=self.do_scaling)
         self.scale_button.grid(row=5, column=0, padx=20, pady=(20, 10))        
         
@@ -327,8 +318,8 @@ class App(customtkinter.CTk):
         # SVM
         elif self.radio_var.get() == 1:
             print('Starting SVM Regression')
-            parametersSVM = {'C': [1, 100, 1000, 20000, 30000, 40000, 60000, 80000], \
-                             'gamma': [0.001, 0.005, 0.01, 0.05, 0.1, 1, 10, 20, 50]}
+            parametersSVM = {'C': [1, 100, 1000, 20000, 40000, 60000, 70000], \
+                             'gamma': [0.001, 0.005, 0.01, 0.05, 0.1, 1, 10, 20]}
             set_kernel = 'rbf'
             svm = SVR(kernel=set_kernel)
             cvSVM = 5
