@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Funtion for reading spectra from folder
 def readX_and_y(path):
@@ -23,6 +24,23 @@ def readX_and_y(path):
 
     X_df = pd.DataFrame(X, columns=wl_int, index=y)
     return X_df
+
+# Function for Plotting un-preprocessed samples
+def plot_samples(wl, X, y):
+    plt.figure(figsize=(14,4))
+    plt.subplot(1,2,1)
+    plt.plot(wl, X[:20,:].T)
+    plt.title('First 20 spectra')
+    plt.xlabel(r'$\lambda$ (nm)')
+    plt.ylabel('X')
+    plt.subplot(1,2,2)
+    plt.title('y_labels')
+    #plt.plot(y)
+    sns.histplot(y, kde=True, binwidth=5)
+    plt.xlabel('Moisture Content [%]')
+    plt.ylabel('Y')
+    plt.show()
+
 
 # Function for printing metrics
 def print_metrics(score_c, score_vv, score_cv, rmse_c, rmse_vv, rmse_cv):

@@ -3,14 +3,16 @@ import tkinter as tk
 from tkinter import ttk
 import customtkinter
 import sys
+import seaborn as sns
 
 from preprocessing import msc, snv, savgol
-from utils import readX_and_y, plot_metrics, print_metrics
+from utils import readX_and_y, plot_metrics, print_metrics, plot_samples
 from CNNclass import CNN
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.metrics import r2_score, root_mean_squared_error
 from sklearn.svm import SVR
+import matplotlib.pyplot as plt
 
 import tensorflow as tf
 from keras.callbacks import EarlyStopping # type: ignore
@@ -212,7 +214,9 @@ class App(customtkinter.CTk):
         self.X = self.X_df_specific.to_numpy()
         self.y = np.array(self.X_df_specific.index)
         self.n_wavelenths = self.X.shape[1]
+        self.wl_int = np.linspace(self.preset_startWL, self.preset_stopWL, self.n_wavelenths)
         print('Number of used wavelengths: '+ str(self.n_wavelenths))
+        plot_samples(self.wl_int, self.X, self.y)
         self.preprocessing_button.configure(state='enabled')
     
     # Preprocessing from Utils
@@ -236,6 +240,12 @@ class App(customtkinter.CTk):
         else:
             self.X = self.X
             print('No Preprocessing done')
+
+        plt.figure(figsize=(9,5))
+        plt.plot(self.wl_int, self.X[:20,:].T)
+        plt.title('Preprocessed spectra')
+        plt.show()
+
         print('SUCCESS Preprocessing')
         self.splitting_button.configure(state='enabled')
 
@@ -257,6 +267,14 @@ class App(customtkinter.CTk):
 
         self.X_train_val, self.X_test, self.y_train_val, self.y_test = train_test_split(self.X, self.y, test_size=self.test_size, random_state=self.random_state)
         self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(self.X_train_val, self.y_train_val, test_size=0.25, random_state=self.random_state)
+        
+        plt.figure(figsize=(9,5))
+        plt.title('Distribution of Y train and test data')
+        sns.histplot(self.y_train,label='train Y', kde=True, stat='density')
+        sns.histplot(self.y_test,label='test Y', kde=True, stat='density')
+        plt.legend()
+        plt.show()
+        
         print('SUCCESS Data splitting')
         self.regression_button.configure(state='enabled')
     
