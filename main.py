@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 
 import tensorflow as tf
 from keras.callbacks import EarlyStopping # type: ignore
+import pickle
 
 
 customtkinter.set_appearance_mode('dark')
@@ -378,6 +379,9 @@ class App(customtkinter.CTk):
             print_metrics(score_c, score_vv, score_cv, rmse_c, rmse_vv, rmse_cv)
             plot_metrics(self.radio_var.get(), self.y_test, y_cv, score_c, score_vv, score_cv, rmse_c, rmse_vv, rmse_cv, self.X, self.n_wavelenths, self.preset_startWL, self.preset_stopWL)
 
+            # filename = "SVM_WL930_1692_savgol15_3_3+snv_rand42_v13_model.pkl"
+            # pickle.dump(svm, open(filename, "wb"))
+
         # CNN
         elif self.radio_var.get() == 2:
             print('Starting CNN Regression')
@@ -424,6 +428,9 @@ class App(customtkinter.CTk):
             
         else:
             print('No valid Choice!')
+
+        filename = "SVM_WL930_1692_savgol15_3_3+snv_rand42_v13_model.pkl"
+        pickle.dump(svm, open(filename, "wb"))
 
     # Function RESET    
     def reset(self):
