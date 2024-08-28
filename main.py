@@ -341,7 +341,7 @@ class App(customtkinter.CTk):
                              'gamma': [0.001, 0.005, 0.01, 0.05, 0.1, 1, 10, 20]}
             set_kernel = 'rbf'
             svm = SVR(kernel=set_kernel)
-            cvSVM = 5
+            cvSVM = 10 #5
             # Code for Progress bar
             num_fitsSVM = cvSVM * len(parametersSVM['C']) * len(parametersSVM['gamma'])
             self.progress_bar['maximum'] = num_fitsSVM
@@ -355,7 +355,7 @@ class App(customtkinter.CTk):
                 return score
 
             opt_svm = GridSearchCV(svm, parametersSVM, scoring=scoringSVM, verbose=0, cv=cvSVM)
-            opt_svm.fit(self.X_train, self.y_train)
+            opt_svm.fit(self.X_train_val, self.y_train_val)
 
             self.progress_window.destroy()
 
